@@ -1,0 +1,597 @@
+#Standard QC and cluster cleanup
+library(dplyr)
+library(Seurat)
+library(harmony)
+library(sctransform)
+
+sn<-readRDS("C:/Users/Kelly/Downloads/obj_from_all_lineages_filtered_cleaned_SCT_UMAP_on_harmony_lineage_called_clusters_called_final.rds")
+sn<-SplitObject(sn, split.by="Lineage")
+
+neurons_sn<-sn$Neuron
+myeloid_sn<-sn$Myeloid
+astrocytes_sn<-sn$Astrocyte
+OL_sn<-sn$OL
+OPC_sn<-sn$OPC
+vascular_sn<-sn$Vascular
+Endothelial_sn<-sn$Endothelial
+Tcell_sn<-sn$Tcell
+
+rm(sn)
+rep(gc(),1000)
+
+saveRDS(neurons_sn, "sn_neurons_raw.rds")
+saveRDS(myeloid_sn, "sn_myeloid_raw.rds")
+saveRDS(astrocytes_sn, "sn_astrocytes_raw.rds")
+saveRDS(OL_sn, "sn_OL_raw.rds")
+saveRDS(OPC_sn, "sn_OPC_raw.rds")
+saveRDS(vascular_sn, "sn_vascular_raw.rds")
+saveRDS(Endothelial_sn, "sn_endothelial_raw.rds")
+saveRDS(Tcell_sn, "sn_Tcell_raw.rds")
+
+workflow<-function(x){
+  x<-SCTransform(x, assay="RNA",vars.to.regress=c("case_num","percent_mito"))
+  x<-FindVariableFeatures(x)
+  x<-ScaleData(x)
+  x<-RunPCA(x)
+  x<-RunHarmony(
+    x, group.by.vars=c("case_num"),assay.use="SCT")
+  x@reductions[["pca"]]<-x@reductions[["harmony"]]
+  return(x)
+}
+
+#Neurons
+neurons_sn_cluster_0 <- neurons_sn[,neurons_sn@meta.data[,"seurat_clusters"] == 0]
+neurons_sn_cluster_1 <- neurons_sn[,neurons_sn@meta.data[,"seurat_clusters"] == 1]
+neurons_sn_cluster_2 <- neurons_sn[,neurons_sn@meta.data[,"seurat_clusters"] == 2]
+neurons_sn_cluster_3 <- neurons_sn[,neurons_sn@meta.data[,"seurat_clusters"] == 3]
+
+#Cluster 0
+neurons_sn_cluster_0<-workflow(neurons_sn_cluster_0)
+neurons_sn_cluster_0<-FindNeighbors(neurons_sn_cluster_0, dims=1:15, k.param=20)
+neurons_sn_cluster_0<-FindClusters(neurons_sn_cluster_0,resolution = 0.1)
+neurons_sn_cluster_0<-RunUMAP(neurons_sn_cluster_0, dims=1:15)
+
+neurons_sn_cluster_0_markers<-FindAllMarkers(neurons_sn_cluster_0)
+
+#Cluster 0 all MT and oligo genes
+neurons_sn_cluster_0 <-neurons_sn_cluster_0[,neurons_sn_cluster_0@meta.data[,"seurat_clusters"] != 0]
+
+neurons_sn_cluster_0<-workflow(neurons_sn_cluster_0)
+neurons_sn_cluster_0<-FindNeighbors(neurons_sn_cluster_0, dims=1:15, k.param=20)
+neurons_sn_cluster_0<-FindClusters(neurons_sn_cluster_0,resolution = 0.05)
+neurons_sn_cluster_0<-RunUMAP(neurons_sn_cluster_0, dims=1:15)
+neurons_sn_cluster_0_markers<-FindAllMarkers(neurons_sn_cluster_0)
+
+saveRDS(neurons_sn_cluster_0_markers, "neurons_sn_cluster_0_markers_cleaned.rds")
+saveRDS(neurons_sn_cluster_0, "neurons_sn_cluster_0_cleaned.rds")
+
+#Cluster1
+neurons_sn_cluster_1<-workflow(neurons_sn_cluster_1)
+neurons_sn_cluster_1<-FindNeighbors(neurons_sn_cluster_1, dims=1:15, k.param=20)
+neurons_sn_cluster_1<-FindClusters(neurons_sn_cluster_1,resolution = 0.1)
+neurons_sn_cluster_1<-RunUMAP(neurons_sn_cluster_1, dims=1:15)
+neurons_sn_cluster_1_markers<-FindAllMarkers(neurons_sn_cluster_1)
+saveRDS(neurons_sn_cluster_1_markers, "neurons_sn_cluster_1_markers.rds")
+saveRDS(neurons_sn_cluster_1, "neurons_sn_cluster_1.rds")
+
+#Again Cluster 0 expressing mainly oligo and MT genes
+neurons_sn_cluster_1 <-neurons_sn_cluster_1[,neurons_sn_cluster_1@meta.data[,"seurat_clusters"] != 0]
+
+neurons_sn_cluster_1<-workflow(neurons_sn_cluster_1)
+neurons_sn_cluster_1<-FindNeighbors(neurons_sn_cluster_1, dims=1:14, k.param=20)
+neurons_sn_cluster_1<-FindClusters(neurons_sn_cluster_1,resolution = 0.1)
+neurons_sn_cluster_1<-RunUMAP(neurons_sn_cluster_1, dims=1:14)
+neurons_sn_cluster_1_markers<-FindAllMarkers(neurons_sn_cluster_1)
+
+saveRDS(neurons_sn_cluster_1_markers, "neurons_sn_cluster_1_markers_cleaned.rds")
+saveRDS(neurons_sn_cluster_1, "neurons_sn_cluster_1_cleaned.rds")
+
+#Cluster 2
+neurons_sn_cluster_2<-workflow(neurons_sn_cluster_2)
+neurons_sn_cluster_2<-FindNeighbors(neurons_sn_cluster_2, dims=1:15, k.param=20)
+neurons_sn_cluster_2<-FindClusters(neurons_sn_cluster_2,resolution = 0.1)
+neurons_sn_cluster_2<-RunUMAP(neurons_sn_cluster_2, dims=1:15)
+neurons_sn_cluster_2_markers<-FindAllMarkers(neurons_sn_cluster_2)
+saveRDS(neurons_sn_cluster_2_markers, "neurons_sn_cluster_2_markers.rds")
+
+#This looks fine as is
+saveRDS(neurons_sn_cluster_2, "neurons_sn_cluster_2_cleaned.rds")
+
+#Cluster3
+neurons_sn_cluster_3<-workflow(neurons_sn_cluster_3)
+neurons_sn_cluster_3<-FindNeighbors(neurons_sn_cluster_3, dims=1:15, k.param=20)
+neurons_sn_cluster_3<-FindClusters(neurons_sn_cluster_3,resolution = 0.1)
+neurons_sn_cluster_3<-RunUMAP(neurons_sn_cluster_3, dims=1:15)
+neurons_sn_cluster_3_markers<-FindAllMarkers(neurons_sn_cluster_3)
+
+#Cluster 0 is all oligo and MT genes
+neurons_sn_cluster_3 <-neurons_sn_cluster_3[,neurons_sn_cluster_3@meta.data[,"seurat_clusters"] != 0]
+neurons_sn_cluster_3<-workflow(neurons_sn_cluster_3)
+neurons_sn_cluster_3<-FindNeighbors(neurons_sn_cluster_3, dims=1:14, k.param=20)
+neurons_sn_cluster_3<-FindClusters(neurons_sn_cluster_3,resolution = 0.1)
+neurons_sn_cluster_3<-RunUMAP(neurons_sn_cluster_3, dims=1:14)
+neurons_sn_cluster_3_markers<-FindAllMarkers(neurons_sn_cluster_3)
+
+saveRDS(neurons_sn_cluster_3_markers, "neurons_sn_cluster_3_markers_cleaned.rds")
+saveRDS(neurons_sn_cluster_3, "neurons_sn_cluster_3_cleaned.rds")
+
+#Put back into one object
+neurons_cleaned<-merge(neurons_sn_cluster_0,neurons_sn_cluster_1)
+neurons_cleaned<-merge(neurons_cleaned,neurons_sn_cluster_2)
+neurons_cleaned<-merge(neurons_cleaned,neurons_sn_cluster_3)
+
+neurons_cleaned<-workflow(neurons_cleaned)
+neurons_cleaned<-FindNeighbors(neurons_cleaned, dims=1:15, k.param=100)
+neurons_cleaned<-FindClusters(neurons_cleaned,resolution = 0.1)
+neurons_cleaned<-RunUMAP(neurons_cleaned, dims=1:15)
+DimPlot(neurons_cleaned)
+DimPlot(neurons_cleaned, group.by=c("case_num"))
+saveRDS(neurons_cleaned, "neurons_sn_cleaned.rds")
+
+neurons_cleaned_markers<-FindAllMarkers(neurons_cleaned)
+saveRDS(neurons_cleaned_markers, "neurons_sn_cleaned_markers.rds")
+
+
+#Astrocytes
+astrocytes_sn_cluster_1 <- subset(astrocytes_sn, subset = seurat_clusters == c(1))
+astrocytes_sn_cluster_0 <- subset(astrocytes_sn, subset = seurat_clusters == c(0))
+astrocytes_sn_cluster_2 <- subset(astrocytes_sn, subset = seurat_clusters == c(2))
+
+astrocytes_sn_cluster_1<-NormalizeData(astrocytes_sn_cluster_1)
+astrocytes_sn_cluster_1<-FindVariableFeatures(astrocytes_sn_cluster_1)
+astrocytes_sn_cluster_1<-ScaleData(astrocytes_sn_cluster_1)
+astrocytes_sn_cluster_1<-RunPCA(astrocytes_sn_cluster_1)
+astrocytes_sn_cluster_1<-FindNeighbors(astrocytes_sn_cluster_1, dims=1:14, k.param=50)
+astrocytes_sn_cluster_1<-FindClusters(astrocytes_sn_cluster_1,resolution = 0.1)
+astrocytes_sn_cluster_1<-RunUMAP(astrocytes_sn_cluster_1, dims=1:14)
+astrocyte_sn_cluster_1_markers<-FindAllMarkers(astrocytes_sn_cluster_1)
+
+astrocytes_sn_clusters_0_2 <- subset(astrocytes_sn, subset = seurat_clusters == c(0,2))
+astrocytes_sn_cluster_1_subset_no_cluster2 = astrocytes_sn_cluster_1[, astrocytes_sn_cluster_1@meta.data[, "seurat_clusters"] != 2]
+new_astrocytes_sn<-merge(astrocytes_sn_cluster_1_subset_no_cluster2,astrocytes_sn_cluster_0)
+new_astrocytes_sn<-merge(new_astrocytes_sn, astrocytes_sn_cluster_2)
+
+#new astrocyte objects normalizing and clustering
+new_astrocytes_sn<-SCTransform(new_astrocytes_sn, assay="RNA",vars.to.regress=c("case_num","percent_mito"))
+new_astrocytes_sn<-FindVariableFeatures(new_astrocytes_sn)
+new_astrocytes_sn<-ScaleData(new_astrocytes_sn)
+new_astrocytes_sn<-RunPCA(new_astrocytes_sn)
+ElbowPlot(new_astrocytes_sn)
+new_astrocytes_sn<-RunHarmony(
+  new_astrocytes_sn, group.by.vars=c("case_num"), assay.use = "SCT")
+
+#put harmony results in pca slot
+new_astrocytes_sn@reductions[["pca"]]<-new_astrocytes_sn@reductions[["harmony"]]
+
+new_astrocytes_sn<-FindNeighbors(new_astrocytes_sn, dims=1:16, k.param=20)
+new_astrocytes_sn<-FindClusters(new_astrocytes_sn,resolution = 0.2)
+new_astrocytes_sn<-RunUMAP(new_astrocytes_sn, dims=1:16)
+
+DimPlot(new_astrocytes_sn)
+FeaturePlot(new_astrocytes_sn, features=c("PLP1","CD44","MOBP","DPP10"))
+new_astrocytes_sn_markers<-FindAllMarkers(new_astrocytes_sn)
+
+#Cluster 1 mostly oligo genes
+#Second round of cleanup
+astrocytes_round2_bad_cluster <- subset(new_astrocytes_sn, subset = seurat_clusters == c(1))
+astrocytes_round2_good_cluster_0 <- subset(new_astrocytes_sn, subset = seurat_clusters == c(0))
+astrocytes_round2_good_cluster_2 <- subset(new_astrocytes_sn, subset = seurat_clusters == c(2))
+
+astrocytes_round2_bad_cluster<-NormalizeData(astrocytes_round2_bad_cluster)
+astrocytes_round2_bad_cluster<-FindVariableFeatures(astrocytes_round2_bad_cluster)
+astrocytes_round2_bad_cluster<-ScaleData(astrocytes_round2_bad_cluster)
+astrocytes_round2_bad_cluster<-RunPCA(astrocytes_round2_bad_cluster)
+ElbowPlot(astrocytes_round2_bad_cluster)
+
+astrocytes_round2_bad_cluster<-FindNeighbors(astrocytes_round2_bad_cluster, dims=1:11, k.param=20)
+astrocytes_round2_bad_cluster<-FindClusters(astrocytes_round2_bad_cluster,resolution = 0.2)
+astrocytes_round2_bad_cluster<-RunUMAP(astrocytes_round2_bad_cluster, dims=1:11)
+
+DimPlot(astrocytes_round2_bad_cluster)
+FeaturePlot(astrocytes_round2_bad_cluster, features=c("PLP1","MOBP","MBP","ERMN","OPALIN","MOG","MAG"))
+
+astrocytes_round2_bad_cluster_markers<-FindAllMarkers(astrocytes_round2_bad_cluster)
+#cluster 6 expresses MOBP, MBP, MOG, CNP, TMEM144; 10 ERMN, OPALIN, MAL, MYRF; 3 MAG, CNP, TF. Removing cluster 6
+astrocytes_round2_bad_removed<-astrocytes_round2_bad_cluster[,astrocytes_round2_bad_cluster@meta.data[,"seurat_clusters"] != 6]
+new_astrocytes_2<-merge(astrocytes_round2_good_cluster_0,astrocytes_round2_bad_removed)
+new_astrocytes_2<-merge(new_astrocytes_2, astrocytes_round2_good_cluster_2)
+#new astrocyte objects normalizing and clustering
+new_astrocytes_2<-SCTransform(new_astrocytes_2, assay="RNA",vars.to.regress=c("case_num","percent_mito"))
+
+new_astrocytes_2<-NormalizeData(new_astrocytes_2)
+new_astrocytes_2<-FindVariableFeatures(new_astrocytes_2)
+new_astrocytes_2<-ScaleData(new_astrocytes_2)
+new_astrocytes_2<-RunPCA(new_astrocytes_2)
+ElbowPlot(new_astrocytes_2)
+new_astrocytes_2<-RunHarmony(
+  new_astrocytes_2, group.by.vars=c("case_num"), assay.use = "SCT")
+
+#put harmony results in pca slot
+new_astrocytes_2@reductions[["pca"]]<-new_astrocytes_2@reductions[["harmony"]]
+
+new_astrocytes_2<-FindNeighbors(new_astrocytes_2, dims=1:13, k.param=50)
+new_astrocytes_2<-FindClusters(new_astrocytes_2,resolution = 0.2)
+new_astrocytes_2<-RunUMAP(new_astrocytes_2, dims=1:13)
+DimPlot(new_astrocytes_2, group.by="case_num")
+DimPlot(new_astrocytes_2)
+FeaturePlot(new_astrocytes_2, features=c("PLP1","CD44","MOBP","DPP10"))
+new_astrocytes_2_markers<-FindAllMarkers(new_astrocytes_2)
+
+#third cleanup round
+astrocytes_round3_bad_cluster <- subset(new_astrocytes_2, subset = seurat_clusters == c(1))
+astrocytes_round3_good_clusters<-new_astrocytes_2[,new_astrocytes_2@meta.data[,"seurat_clusters"] != 1]
+
+astrocytes_round3_bad_cluster<-NormalizeData(astrocytes_round3_bad_cluster)
+astrocytes_round3_bad_cluster<-FindVariableFeatures(astrocytes_round3_bad_cluster)
+astrocytes_round3_bad_cluster<-ScaleData(astrocytes_round3_bad_cluster)
+astrocytes_round3_bad_cluster<-RunPCA(astrocytes_round3_bad_cluster)
+ElbowPlot(astrocytes_round3_bad_cluster)
+
+astrocytes_round3_bad_cluster<-FindNeighbors(astrocytes_round3_bad_cluster, dims=1:13, k.param=20)
+astrocytes_round3_bad_cluster<-FindClusters(astrocytes_round3_bad_cluster,resolution = 0.2)
+astrocytes_round3_bad_cluster<-RunUMAP(astrocytes_round3_bad_cluster, dims=1:13)
+
+DimPlot(astrocytes_round3_bad_cluster)
+FeaturePlot(astrocytes_round3_bad_cluster, features=c("PLP1","MOBP","MBP","ERMN","OPALIN","MOG","MAG"))
+
+astrocytes_round3_bad_cluster_markers<-FindAllMarkers(astrocytes_round3_bad_cluster)
+
+#Remove 9 and 2
+astrocytes_round3_bad_cluster_cleaned <-astrocytes_round3_bad_cluster[,astrocytes_round3_bad_cluster@meta.data[,"seurat_clusters"] != 2]
+astrocytes_round3_bad_cluster_cleaned <-astrocytes_round3_bad_cluster_cleaned[,astrocytes_round3_bad_cluster_cleaned@meta.data[,"seurat_clusters"] != 9]
+
+astrocytes_after_round_3<-merge(astrocytes_round3_good_clusters, astrocytes_round3_bad_cluster_cleaned)
+
+
+#new astrocyte objects normalizing and clustering
+astrocytes_after_round_3<-SCTransform(astrocytes_after_round_3, assay="RNA",vars.to.regress=c("case_num","percent_mito"))
+
+astrocytes_after_round_3<-NormalizeData(astrocytes_after_round_3)
+astrocytes_after_round_3<-FindVariableFeatures(astrocytes_after_round_3)
+astrocytes_after_round_3<-ScaleData(astrocytes_after_round_3)
+astrocytes_after_round_3<-RunPCA(astrocytes_after_round_3)
+ElbowPlot(astrocytes_after_round_3)
+astrocytes_after_round_3<-RunHarmony(
+  astrocytes_after_round_3, group.by.vars=c("case_num"), assay.use = "SCT")
+
+#put harmony results in pca slot
+astrocytes_after_round_3@reductions[["pca"]]<-astrocytes_after_round_3@reductions[["harmony"]]
+
+astrocytes_after_round_3<-FindNeighbors(astrocytes_after_round_3, dims=1:16, k.param=100)
+astrocytes_after_round_3<-FindClusters(astrocytes_after_round_3,resolution = 0.15)
+astrocytes_after_round_3<-RunUMAP(astrocytes_after_round_3, dims=1:16)
+DimPlot(astrocytes_after_round_3, group.by="case_num")
+DimPlot(astrocytes_after_round_3)
+FeaturePlot(astrocytes_after_round_3, features=c("CD44","DPP10"))
+astrocytes_after_round_3_markers<-FindAllMarkers(astrocytes_after_round_3)
+
+
+astrocytes_sn_final<-astrocytes_after_round_3
+astrocytes_sn_final_markers<-astrocytes_after_round_3_markers
+saveRDS(astrocytes_sn_final, "astrocytes_sn_final.rds")
+saveRDS(astrocytes_sn_final_markers, "astrocytes_sn_final_markers.rds")
+
+
+#Myeloid
+myeloid_sn<-PercentageFeatureSet(myeloid_sn, "^MT-", col.name = "percent_mito")
+workflow<-function(x){
+  x<-SCTransform(x, assay="RNA",vars.to.regress=c("case_num","percent_mito"))
+  x<-NormalizeData(x)
+  x<-FindVariableFeatures(x)
+  x<-ScaleData(x)
+  x<-RunPCA(x)
+  x<-RunHarmony(
+    x, group.by.vars=c("case_num"),assay.use="SCT")
+  x@reductions[["pca"]]<-x@reductions[["harmony"]]
+  return(x)
+}
+myeloid_sn<-workflow(myeloid_sn)
+myeloid_sn<-FindNeighbors(myeloid_sn, dims=1:19, k.param=20)
+myeloid_sn<-FindClusters(myeloid_sn,resolution = 0.3)
+myeloid_sn<-RunUMAP(myeloid_sn, dims=1:19)
+DimPlot(myeloid_sn)
+DimPlot(myeloid_sn, group.by=c("case_num"))
+myeloid_markers<-FindAllMarkers(myeloid_sn)
+
+myeloid_sn <-myeloid_sn[,myeloid_sn@meta.data[,"seurat_clusters"] != 5]
+myeloid_sn <-myeloid_sn[,myeloid_sn@meta.data[,"seurat_clusters"] != 6]
+myeloid_sn <-myeloid_sn[,myeloid_sn@meta.data[,"seurat_clusters"] != 3]
+
+myeloid_sn<-workflow(myeloid_sn)
+myeloid_sn<-FindNeighbors(myeloid_sn, dims=1:10, k.param=20)
+myeloid_sn<-FindClusters(myeloid_sn,resolution = 0.7)
+myeloid_sn<-RunUMAP(myeloid_sn, dims=1:10)
+DimPlot(myeloid_sn)
+DimPlot(myeloid_sn, group.by=c("case_num"))
+myeloid_markers<-FindAllMarkers(myeloid_sn)
+
+saveRDS(myeloid_sn, "myeloid_sn_normalized_harmonized_final.rds")
+#IMPORTANT: see separate QC_Myeloid script for further processing performed on myeloid cells
+
+
+#Oligodendrocytes
+#Splitting into 3 groups because the full object is too big to process
+k <- 3
+OL_sn$k.assign <- sample(x = 1:k, size = ncol(OL_sn), replace = TRUE)
+OL_sn.split <- SplitObject(OL_sn, split.by = 'k.assign')
+OL_1<-OL_sn.split$`1`
+OL_2<-OL_sn.split$`2`
+OL_3<-OL_sn.split$`3`
+
+#Normalizing and Harmonizing
+OL_1 <- PercentageFeatureSet(OL_1, "^MT-", col.name = "percent_mito")
+OL_2 <- PercentageFeatureSet(OL_2, "^MT-", col.name = "percent_mito")
+OL_3 <- PercentageFeatureSet(OL_3, "^MT-", col.name = "percent_mito")
+
+OL_1<-workflow(OL_1)
+OL_2<-workflow(OL_2)
+OL_3<-workflow(OL_3)
+
+OL_1<-FindNeighbors(OL_1, dims=1:15, k.param=80)
+OL_1<-FindClusters(OL_1,resolution = 0.1)
+OL_1<-RunUMAP(OL_1, dims=1:15)
+DimPlot(OL_1)
+DimPlot(OL_1, group.by=c("case_num"))
+saveRDS(OL_1, "OL_sn_group1_harmonized_normalized.rds")
+OL_1_markers<-FindAllMarkers(OL_1)
+saveRDS(OL_1_markers, "OL_sn_group1_markers.rds")
+
+OL_2<-FindNeighbors(OL_2, dims=1:15, k.param=80)
+OL_2<-FindClusters(OL_2,resolution = 0.1)
+OL_2<-RunUMAP(OL_2, dims=1:15)
+DimPlot(OL_2)
+DimPlot(OL_2, group.by=c("case_num"))
+saveRDS(OL_2, "OL_sn_group2_harmonized_normalized.rds")
+OL_2_markers<-FindAllMarkers(OL_2)
+saveRDS(OL_2_markers, "OL_sn_group2_markers.rds")
+
+OL_3<-FindNeighbors(OL_3, dims=1:15, k.param=80)
+OL_3<-FindClusters(OL_3,resolution = 0.1)
+OL_3<-RunUMAP(OL_3, dims=1:15)
+DimPlot(OL_3)
+DimPlot(OL_3, group.by=c("case_num"))
+saveRDS(OL_3, "OL_sn_group3_harmonized_normalized.rds")
+OL_3_markers<-FindAllMarkers(OL_3)
+saveRDS(OL_3_markers, "OL_sn_group3_markers.rds")
+
+#Cleanup
+
+#GROUP 1
+DimPlot(OL_1)
+OL_1_cluster_0 <- OL_1[,OL_1@meta.data[,"seurat_clusters"] == 0]
+OL_1_cluster_1 <- OL_1[,OL_1@meta.data[,"seurat_clusters"] == 1]
+
+
+#Cluster 0
+OL_1_cluster_0<-workflow(OL_1_cluster_0)
+OL_1_cluster_0<-FindNeighbors(OL_1_cluster_0, dims=1:10, k.param=20)
+OL_1_cluster_0<-FindClusters(OL_1_cluster_0,resolution = 0.3)
+OL_1_cluster_0<-RunUMAP(OL_1_cluster_0, dims=1:10)
+DimPlot(OL_1_cluster_0)
+#OL_1_cluster_0_markers<-FindAllMarkers(OL_1_cluster_0)
+#looks good
+#saveRDS(OL_1_cluster_0_markers, "OL_1_cluster_0_markers.rds")
+saveRDS(OL_1_cluster_0, "OL_1_cluster_0.rds")
+
+
+
+#Cluster 1
+OL_1_cluster_1<-workflow(OL_1_cluster_1)
+OL_1_cluster_1<-FindNeighbors(OL_1_cluster_1, dims=1:10, k.param=20)
+OL_1_cluster_1<-FindClusters(OL_1_cluster_1,resolution = 0.1)
+OL_1_cluster_1<-RunUMAP(OL_1_cluster_1, dims=1:10)
+DimPlot(OL_1_cluster_1)
+OL_1_cluster_1_markers<-FindAllMarkers(OL_1_cluster_1)
+#Cluster 1 expressing some neuronal genes; not a lot of oligo genes. Deleting:
+OL_1_cluster_1 <-OL_1_cluster_1[,OL_1_cluster_1@meta.data[,"seurat_clusters"] != 1]
+
+OL_1_cluster_1<-workflow(OL_1_cluster_1)
+OL_1_cluster_1<-FindNeighbors(OL_1_cluster_1, dims=1:15, k.param=20)
+OL_1_cluster_1<-FindClusters(OL_1_cluster_1,resolution = 0.3)
+OL_1_cluster_1<-RunUMAP(OL_1_cluster_1, dims=1:15)
+DimPlot(OL_1_cluster_1)
+#OL_1_cluster_1_markers<-FindAllMarkers(OL_1_cluster_1)
+
+saveRDS(OL_1_cluster_0_markers, "OL_1_cluster_0_markers_cleaned.rds")
+saveRDS(OL_1_cluster_0, "OL_1_cluster_0_cleaned.rds")
+
+OL_1_cleaned<-merge(OL_1_cluster_0, OL_1_cluster_1)
+OL_1_cleaned<-workflow(OL_1_cleaned)
+OL_1_cleaned<-FindNeighbors(OL_1_cleaned, dims=1:10, k.param=20)
+OL_1_cleaned<-FindClusters(OL_1_cleaned,resolution = 0.1)
+OL_1_cleaned<-RunUMAP(OL_1_cleaned, dims=1:10)
+DimPlot(OL_1_cleaned)
+OL_1_cleaned_markers<-FindAllMarkers(OL_1_cleaned)
+
+#cluster 1 is all OPC genes
+OL_1_cleaned <-OL_1_cleaned[,OL_1_cleaned@meta.data[,"seurat_clusters"] != 1]
+
+OL_1_cleaned<-workflow(OL_1_cleaned)
+OL_1_cleaned<-FindNeighbors(OL_1_cleaned, dims=1:15, k.param=20)
+OL_1_cleaned<-FindClusters(OL_1_cleaned,resolution = 0.3)
+OL_1_cleaned<-RunUMAP(OL_1_cleaned, dims=1:15)
+DimPlot(OL_1_cleaned)
+saveRDS(OL_1_cleaned, "OL_group1_cleaned.rds")
+
+#GROUP 2
+DimPlot(OL_2)
+OL_2_cluster_0 <- OL_2[,OL_2@meta.data[,"seurat_clusters"] == 0]
+OL_2_cluster_1 <- OL_2[,OL_2@meta.data[,"seurat_clusters"] == 1]
+
+#Cluster 0
+OL_2_cluster_0<-workflow(OL_2_cluster_0)
+OL_2_cluster_0<-FindNeighbors(OL_2_cluster_0, dims=1:10, k.param=20)
+OL_2_cluster_0<-FindClusters(OL_2_cluster_0,resolution = 0.3)
+OL_2_cluster_0<-RunUMAP(OL_2_cluster_0, dims=1:10)
+DimPlot(OL_2_cluster_0)
+#OL_2_cluster_0_markers<-FindAllMarkers(OL_2_cluster_0)
+#looks good
+#saveRDS(OL_2_cluster_0_markers, "OL_2_cluster_0_markers.rds")
+#saveRDS(OL_2_cluster_0, "OL_2_cluster_0.rds")
+
+#Cluster 1
+OL_2_cluster_1<-workflow(OL_2_cluster_1)
+OL_2_cluster_1<-FindNeighbors(OL_2_cluster_1, dims=1:10, k.param=20)
+OL_2_cluster_1<-FindClusters(OL_2_cluster_1,resolution = 0.1)
+OL_2_cluster_1<-RunUMAP(OL_2_cluster_1, dims=1:10)
+DimPlot(OL_2_cluster_1)
+OL_2_cluster_1_markers<-FindAllMarkers(OL_2_cluster_1)
+#Cluster 1 expressing some neuronal genes; not a lot of oligo genes. Deleting
+
+OL_2_cluster_1 <-OL_2_cluster_1[,OL_2_cluster_1@meta.data[,"seurat_clusters"] != 1]
+
+OL_2_cluster_1<-workflow(OL_2_cluster_1)
+OL_2_cluster_1<-FindNeighbors(OL_2_cluster_1, dims=1:15, k.param=20)
+OL_2_cluster_1<-FindClusters(OL_2_cluster_1,resolution = 0.3)
+OL_2_cluster_1<-RunUMAP(OL_2_cluster_1, dims=1:15)
+DimPlot(OL_2_cluster_1)
+#OL_2_cluster_1_markers<-FindAllMarkers(OL_2_cluster_1)
+
+#saveRDS(OL_2_cluster_0_markers, "OL_2_cluster_0_markers_cleaned.rds")
+#saveRDS(OL_2_cluster_0, "OL_2_cluster_0_cleaned.rds")
+
+OL_2_cleaned<-merge(OL_2_cluster_0, OL_2_cluster_1)
+OL_2_cleaned<-workflow(OL_2_cleaned)
+OL_2_cleaned<-FindNeighbors(OL_2_cleaned, dims=1:10, k.param=20)
+OL_2_cleaned<-FindClusters(OL_2_cleaned,resolution = 0.1)
+OL_2_cleaned<-RunUMAP(OL_2_cleaned, dims=1:10)
+DimPlot(OL_2_cleaned)
+OL_2_cleaned_markers<-FindAllMarkers(OL_2_cleaned)
+
+#cluster 1 is all OPC genes
+OL_2_cleaned <-OL_2_cleaned[,OL_2_cleaned@meta.data[,"seurat_clusters"] != 1]
+
+OL_2_cleaned<-workflow(OL_2_cleaned)
+OL_2_cleaned<-FindNeighbors(OL_2_cleaned, dims=1:15, k.param=20)
+OL_2_cleaned<-FindClusters(OL_2_cleaned,resolution = 0.3)
+OL_2_cleaned<-RunUMAP(OL_2_cleaned, dims=1:15)
+DimPlot(OL_2_cleaned)
+saveRDS(OL_2_cleaned, "OL_group2_cleaned.rds")
+
+
+#GROUP 3
+DimPlot(OL_3)
+OL_3_cluster_0 <- OL_3[,OL_3@meta.data[,"seurat_clusters"] == 0]
+OL_3_cluster_1 <- OL_3[,OL_3@meta.data[,"seurat_clusters"] == 1]
+
+#Cluster 1 expressing mostly OPC genes
+OL_3 <- OL_3[,OL_3@meta.data[,"seurat_clusters"] != 1]
+OL_3<-workflow(OL_3)
+OL_3_cleaned<-FindNeighbors(OL_3, dims=1:15, k.param=20)
+OL_3_cleaned<-FindClusters(OL_3_cleaned,resolution = 0.3)
+OL_3_cleaned<-RunUMAP(OL_3_cleaned, dims=1:15)
+DimPlot(OL_3_cleaned)
+saveRDS(OL_3_cleaned, "OL_group3_cleaned.rds")
+
+OL_3_cleaned_markers<-FindAllMarkers(OL_3_cleaned)
+saveRDS(OL_3_cleaned_markers, "OL_group3_sn_cleaned_markers.rds")
+
+
+#----------Endothelial----------#
+Endothelial_sn <- PercentageFeatureSet(Endothelial_sn, "^MT-", col.name = "percent_mito")
+
+#normalize
+Endothelial_sn<-SCTransform(Endothelial_sn, assay="RNA",vars.to.regress=c("case_num","percent_mito"))
+Endothelial_sn<-FindVariableFeatures(Endothelial_sn)
+Endothelial_sn<-ScaleData(Endothelial_sn)
+Endothelial_sn<-RunPCA(Endothelial_sn)
+ElbowPlot(Endothelial_sn)
+
+Endothelial_sn<-RunHarmony(
+  Endothelial_sn, group.by.vars=c("case_num"), assay.use="SCT")
+
+#put harmony results in pca slot
+Endothelial_sn@reductions[["pca"]]<-Endothelial_sn@reductions[["harmony"]]
+
+Endothelial_sn<-FindNeighbors(Endothelial_sn, dims=1:14, k.param=20)
+Endothelial_sn<-FindClusters(Endothelial_sn,resolution = 0.1)
+Endothelial_sn<-RunUMAP(Endothelial_sn, dims=1:14)
+
+DimPlot(Endothelial_sn)
+DimPlot(Endothelial_sn, group.by=c("case_num"))
+
+saveRDS(Endothelial_sn, "Endothelial_sn_harmonized_normalized.rds")
+
+Endothelial_sn_markers<-FindAllMarkers(Endothelial_sn)
+saveRDS(Endothelial_sn_markers, "Endothelial_sn_markers.rds")
+
+
+#----------Tcells----------#
+Tcell_sn <- PercentageFeatureSet(Tcell_sn, "^MT-", col.name = "percent_mito")
+Tcell_sn<-SCTransform(Tcell_sn, assay="RNA",vars.to.regress=c("case_num","percent_mito"))
+Tcell_sn<-FindVariableFeatures(Tcell_sn)
+Tcell_sn<-ScaleData(Tcell_sn)
+Tcell_sn<-RunPCA(Tcell_sn)
+ElbowPlot(Tcell_sn)
+
+Tcell_sn<-RunHarmony(
+  Tcell_sn, group.by.vars=c("case_num"), assay.use="SCT")
+
+#put harmony results in pca slot
+Tcell_sn@reductions[["pca"]]<-Tcell_sn@reductions[["harmony"]]
+
+Tcell_sn<-FindNeighbors(Tcell_sn, dims=1:11, k.param=20)
+Tcell_sn<-FindClusters(Tcell_sn,resolution = 0.1)
+Tcell_sn<-RunUMAP(Tcell_sn, dims=1:11)
+
+DimPlot(Tcell_sn)
+DimPlot(Tcell_sn, group.by=c("case_num"))
+
+saveRDS(Tcell_sn, "Tcell_sn_harmonized_normalized.rds")
+
+Tcell_sn_markers<-FindAllMarkers(Tcell_sn)
+saveRDS(Tcell_sn_markers, "Tcell_sn_markers.rds")
+
+
+#----------Vascular----------#
+vascular_sn <- PercentageFeatureSet(vascular_sn, "^MT-", col.name = "percent_mito")
+vascular_sn<-SCTransform(vascular_sn, assay="RNA",vars.to.regress=c("case_num","percent_mito"))
+vascular_sn<-FindVariableFeatures(vascular_sn)
+vascular_sn<-ScaleData(vascular_sn)
+vascular_sn<-RunPCA(vascular_sn)
+ElbowPlot(vascular_sn)
+
+vascular_sn<-RunHarmony(
+  vascular_sn, group.by.vars=c("case_num"), assay.use="SCT")
+
+#put harmony results in pca slot
+vascular_sn@reductions[["pca"]]<-vascular_sn@reductions[["harmony"]]
+
+vascular_sn<-FindNeighbors(vascular_sn, dims=1:10, k.param=20)
+vascular_sn<-FindClusters(vascular_sn,resolution = 0.3)
+vascular_sn<-RunUMAP(vascular_sn, dims=1:10)
+
+DimPlot(vascular_sn)
+DimPlot(vascular_sn, group.by=c("case_num"))
+
+saveRDS(vascular_sn, "vascular_sn_harmonized_normalized.rds")
+
+vascular_sn_markers<-FindAllMarkers(vascular_sn)
+saveRDS(vascular_sn_markers, "vascular_sn_markers.rds")
+
+
+#----------OPC----------#
+OPC_sn <- PercentageFeatureSet(OPC_sn, "^MT-", col.name = "percent_mito")
+OPC_sn<-SCTransform(OPC_sn, assay="RNA",vars.to.regress=c("case_num","percent_mito"))
+OPC_sn<-FindVariableFeatures(OPC_sn)
+OPC_sn<-ScaleData(OPC_sn)
+OPC_sn<-RunPCA(OPC_sn)
+ElbowPlot(OPC_sn)
+
+OPC_sn<-RunHarmony(
+  OPC_sn, group.by.vars=c("case_num"), assay.use="SCT")
+
+#put harmony results in pca slot
+OPC_sn@reductions[["pca"]]<-OPC_sn@reductions[["harmony"]]
+
+OPC_sn<-FindNeighbors(OPC_sn, dims=1:10, k.param=100)
+OPC_sn<-FindClusters(OPC_sn,resolution = 0.1)
+OPC_sn<-RunUMAP(OPC_sn, dims=1:10)
+
+DimPlot(OPC_sn)
+DimPlot(OPC_sn, group.by=c("case_num"))
+
+saveRDS(OPC_sn, "OPC_sn_harmonized_normalized.rds")
+
+OPC_sn_markers<-FindAllMarkers(OPC_sn)
+saveRDS(OPC_sn_markers, "OPC_sn_markers.rds")
